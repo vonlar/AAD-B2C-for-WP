@@ -24,7 +24,7 @@ require 'vendor/autoload.php';
  * Defines the B2C Page Path, which is the location the ID_token should be posted to.
  * Also defines the response string posted by B2C.
  */
-define('B2C_PAGE_PATH', '/b2c-token-verification');
+define('B2C_PAGE_PATH', '/blog/b2c-token-verification');
 define('B2C_RESPONSE_MODE', 'id_token');
 
 // Adds the B2C Options page to the Admin dashboard, under 'Settings'.
@@ -80,8 +80,8 @@ function b2c_verify_token() {
 			case 'edit_profile':
 				$policy = B2C_Settings::$edit_profile_policy;
 				break;
-		}	
-		
+		}			
+
 		// Verifies token only if the checkbox "Verify tokens" is checked on the settings page
 		$token_checker = new B2C_Token_Checker($_POST[B2C_RESPONSE_MODE], B2C_Settings::$clientID, $policy);
 		if (B2C_Settings::$verify_tokens) {
@@ -104,7 +104,7 @@ function b2c_verify_token() {
 					'ID' => 0,
 					'user_login' => $email,
 					'user_pass' => NULL,
-					'user_registered' => true,
+					'user_registered' => NULL,
 					'user_status' => 0,
 					'user_email' => $email,
 					'display_name' => $first_name . ' ' . $last_name,
@@ -132,10 +132,12 @@ function b2c_verify_token() {
 		
 		// Check if the user is an admin and needs MFA
 		$wp_user = new WP_User($userID); 
+		
 		if (in_array('administrator', $wp_user->roles)) {
-				
+			//print($token_checker->get_claim('acr')." != ".B2C_Settings::$admin_policy);
+			//exit;
 			// If user did not authenticate with admin_policy, redirect to admin policy
-			if ($token_checker->get_claim('acr') != B2C_Settings::$admin_policy) {
+			if ($token_checker->get_claim('tfp') != B2C_Settings::$admin_policy) {
 				$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$admin_policy);
 				$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint().'&state=admin';
 				wp_redirect($authorization_endpoint);
@@ -147,7 +149,7 @@ function b2c_verify_token() {
 		wp_set_auth_cookie($userID);
 			
 		// Redirect to home page
-		wp_safe_redirect('/');
+		wp_safe_redirect('/blog/');
 		exit;
 	}
 }
